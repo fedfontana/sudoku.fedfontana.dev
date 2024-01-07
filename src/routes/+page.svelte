@@ -2,12 +2,18 @@
 	type EmptyCell = 0;
 	type SudokuCell = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 	type SudokuBoard = (SudokuCell | EmptyCell)[];
+	import { page } from '$app/stores';
+	import { decodeBoard, encodeBoard } from '$lib/utils';
 
-	const initial: SudokuBoard = [
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
-		7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0
-	];
+	const pageBaseURL = $page.url.origin + $page.url.pathname;
+
+	const encoded = $page.url.searchParams.get('board');
+
+	const initial =
+		encoded !== null && encoded.length === 81
+			? decodeBoard(encoded)
+			: Array.from({ length: 81 }).fill(0);
+
 	const board: SudokuBoard = JSON.parse(JSON.stringify(initial));
 	console.assert(board.length === 81);
 
@@ -214,84 +220,104 @@
 			updateErrorsAfterUpdate();
 		}
 	}
+
+	let autoFlag = false;
 </script>
 
 <svelte:window on:keyup|preventDefault={handleKeyUp} />
 
-<!--FIXME: aria-->
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<div
-	use:clickOutside
-	on:click_outside={() => {
-		selectedRow = null;
-		selectedCol = null;
-		selectedBox = null;
-	}}
-	class="mx-auto mt-12 grid w-fit grid-cols-9 grid-rows-9 border-2 border-black"
->
-	{#each board as cell, i}
-		{@const row = Math.floor(i / 9) + 1}
-		{@const col = (i % 9) + 1}
-		{@const box = Math.floor((row - 1) / 3) * 3 + Math.floor((col - 1) / 3) + 1}
-		{@const isExactCell = row === selectedRow && col === selectedCol}
-		{@const isRelatedToCurrent = selectedBox === box || row === selectedRow || col === selectedCol}
-		{@const isSameCellContent = cell === selectedCell}
-		{@const isErrored = errors.has(i)}
-		{@const isFilled = cell !== 0}
-		{@const isInitial = initial[i] !== 0}
-		{@const cellComments = comments.get(i) || []}
-		{@const currentRowContent = board.filter((_, idx) => Math.floor(idx / 9) + 1 === row)}
-		{@const currentColContent = board.filter((_, idx) => (idx % 9) + 1 === col)}
-		{@const currentBoxContent = board.filter(
-			(_, idx) =>
-				Math.floor((Math.floor(idx / 9) + 1 - 1) / 3) * 3 +
-					Math.floor(((idx % 9) + 1 - 1) / 3) +
-					1 ===
-				box
-		)}
-		<div
-			on:click={() => {
-				selectedRow = row;
-				selectedCol = col;
-			}}
-			class="relative flex h-12 w-12 cursor-pointer items-center justify-center
+<div class="mx-auto my-12 flex min-h-full w-fit flex-col items-center gap-12 md:flex-row">
+	<!--FIXME: aria-->
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- svelte-ignore a11y-no-static-element-interactions -->
+	<div
+		use:clickOutside
+		on:click_outside={() => {
+			selectedRow = null;
+			selectedCol = null;
+			selectedBox = null;
+		}}
+		class="mx-auto mt-12 grid w-fit grid-cols-9 grid-rows-9 border-2 border-black"
+	>
+		{#each board as cell, i}
+			{@const row = Math.floor(i / 9) + 1}
+			{@const col = (i % 9) + 1}
+			{@const box = Math.floor((row - 1) / 3) * 3 + Math.floor((col - 1) / 3) + 1}
+			{@const isExactCell = row === selectedRow && col === selectedCol}
+			{@const isRelatedToCurrent =
+				selectedBox === box || row === selectedRow || col === selectedCol}
+			{@const isSameCellContent = cell === selectedCell}
+			{@const isErrored = errors.has(i)}
+			{@const isFilled = cell !== 0}
+			{@const isInitial = initial[i] !== 0}
+			{@const cellComments = autoFlag ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : comments.get(i) || []}
+			{@const currentRowContent = board.filter((_, idx) => Math.floor(idx / 9) + 1 === row)}
+			{@const currentColContent = board.filter((_, idx) => (idx % 9) + 1 === col)}
+			{@const currentBoxContent = board.filter(
+				(_, idx) =>
+					Math.floor((Math.floor(idx / 9) + 1 - 1) / 3) * 3 +
+						Math.floor(((idx % 9) + 1 - 1) / 3) +
+						1 ===
+					box
+			)}
+			<div
+				on:click={() => {
+					selectedRow = row;
+					selectedCol = col;
+				}}
+				class="relative flex h-12 w-12 cursor-pointer items-center justify-center
             border-gray-400 text-xl font-semibold selection:bg-none"
-			class:border-b-black={row % 3 === 0}
-			class:border-b-2={row !== 9}
-			class:border-r-black={col % 3 === 0}
-			class:border-r-2={col !== 9}
-			class:bg-gray-200={!isExactCell && isRelatedToCurrent}
-			class:bg-blue-300={isFilled && !isExactCell && isSameCellContent}
-			class:bg-blue-200={isExactCell && !isErrored}
-			class:bg-red-200={!isExactCell && isErrored}
-			class:bg-red-400={isExactCell && isErrored}
-			class:text-black={isInitial}
-			class:text-blue-500={!isInitial && !isErrored}
-			class:text-red-700={!isInitial && isErrored}
+				class:border-b-black={row % 3 === 0}
+				class:border-b-2={row !== 9}
+				class:border-r-black={col % 3 === 0}
+				class:border-r-2={col !== 9}
+				class:bg-gray-200={!isExactCell && isRelatedToCurrent}
+				class:bg-blue-300={isFilled && !isExactCell && isSameCellContent}
+				class:bg-blue-200={isExactCell && !isErrored}
+				class:bg-red-200={!isExactCell && isErrored}
+				class:bg-red-400={isExactCell && isErrored}
+				class:text-black={isInitial}
+				class:text-blue-500={!isInitial && !isErrored}
+				class:text-red-700={!isInitial && isErrored}
+			>
+				{#if isFilled}
+					{cell}
+				{:else}
+					{#each cellComments as comment}
+						{@const commentTop = Math.floor((comment - 1) / 3) * 33.33}
+						{@const commentLeft = ((comment - 1) % 3) * 33.33}
+						{@const isAlreadyInNeighbourhood =
+							currentRowContent.includes(comment) ||
+							currentColContent.includes(comment) ||
+							currentBoxContent.includes(comment)}
+						{#if !isAlreadyInNeighbourhood}
+							<div
+								class="absolute h-1/3 w-1/3 text-center text-xs font-normal"
+								class:text-gray-500={selectedCell !== comment}
+								class:text-blue-500={selectedCell === comment}
+								style="top: {commentTop}%; left: {commentLeft}%;"
+							>
+								{comment}
+							</div>
+						{/if}
+					{/each}
+				{/if}
+			</div>
+		{/each}
+	</div>
+
+	<div class="flex flex-col items-center gap-2">
+		<span class="flex items-center gap-1">
+			<input type="checkbox" id="auto-comment" bind:checked={autoFlag} class="mr-2" />
+			<label for="auto-comment">auto comment</label>
+		</span>
+		<button
+			on:click={() => {
+				navigator.clipboard.writeText(pageBaseURL + '?board=' + encodeBoard(board));
+			}}
+			class="text-normal rounded bg-blue-500 px-4 py-2 font-semibold text-white transition-all duration-300 hover:bg-blue-700"
 		>
-			{#if isFilled}
-				{cell}
-			{:else}
-				{#each cellComments as comment}
-					{@const commentTop = Math.floor((comment - 1) / 3) * 33.33}
-					{@const commentLeft = ((comment - 1) % 3) * 33.33}
-					{@const isAlreadyInNeighbourhood =
-						currentRowContent.includes(comment) ||
-						currentColContent.includes(comment) ||
-						currentBoxContent.includes(comment)}
-					{#if !isAlreadyInNeighbourhood}
-						<div
-							class="absolute h-1/3 w-1/3 text-center text-xs font-normal"
-							class:text-gray-500={selectedCell !== comment}
-							class:text-blue-500={selectedCell === comment}
-							style="top: {commentTop}%; left: {commentLeft}%;"
-						>
-							{comment}
-						</div>
-					{/if}
-				{/each}
-			{/if}
-		</div>
-	{/each}
+			Copy puzzle link
+		</button>
+	</div>
 </div>
