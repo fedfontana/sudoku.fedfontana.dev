@@ -1,12 +1,14 @@
 <script lang="ts">
-	type SudokuCell = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+	type EmptyCell = 0;
+	type SudokuCell = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+	type SudokuBoard = (SudokuCell | EmptyCell)[];
 
-	const initial: SudokuCell[] = [
+	const initial: SudokuBoard = [
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
 		7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0
 	];
-	const board: SudokuCell[] = JSON.parse(JSON.stringify(initial));
+	const board: SudokuBoard = JSON.parse(JSON.stringify(initial));
 	console.assert(board.length === 81);
 
 	// https://svelte.dev/repl/0ace7a508bd843b798ae599940a91783?version=3.16.7
@@ -30,7 +32,7 @@
 	let selectedCol: number | null = null;
 	let selectedBox: number | null = null;
 
-	let selectedCell: SudokuCell | null = null;
+	let selectedCell: SudokuCell | EmptyCell | null = null;
 
 	let errors: Set<number> = new Set();
 
@@ -103,8 +105,28 @@
 		return indexes;
 	}
 
-	let comments: Map<number, number[]> = new Map();
+	let comments: Map<number, SudokuCell[]> = new Map();
 	comments.set(0, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+	//TODO: instead of deleting the comment when adding the number to the row/col, just
+	// filter the comments when showing them not to show the number that have already been
+	// added to the row/col/block. In this way, if the user decides to remove the number,
+	// the comment will reappear.
+
+	//TODO: Ctrl-Z support?
+
+	function toggleComment(row: number, col: number, comment: SudokuCell) {
+		const cellIdx = (row - 1) * 9 + (col - 1);
+		let c = comments.get(cellIdx) || [];
+		if (c.includes(comment)) {
+			c = c.filter((x) => x !== comment);
+		} else {
+			c.push(comment);
+		}
+		comments.set(cellIdx, c);
+		console.log(comments);
+		comments = comments;
+	}
 
 	$: {
 		if (selectedRow === null || selectedCol === null) {
@@ -116,10 +138,8 @@
 			selectedBox = Math.floor((selectedRow - 1) / 3) * 3 + Math.floor((selectedCol - 1) / 3) + 1;
 		}
 	}
-</script>
 
-<svelte:window
-	on:keyup|preventDefault={(event) => {
+	function handleKeyUp(event: KeyboardEvent) {
 		if (selectedRow === null || selectedCol === null) {
 			return;
 		}
@@ -157,51 +177,47 @@
 		if (isInitial) {
 			return;
 		}
-		switch (event.key) {
+
+		const shiftPressed = event.getModifierState('Shift');
+
+		switch (event.code) {
 			case 'Backspace': {
-				board[cellIdx] = 0;
+				// Shift - backspace deletes all comments for current cell
+				if (shiftPressed) {
+					comments.delete(cellIdx);
+					comments = comments;
+				} else {
+					board[cellIdx] = 0;
+				}
 				break;
 			}
-			case '1': {
-				board[cellIdx] = 1;
-				break;
-			}
-			case '2': {
-				board[cellIdx] = 2;
-				break;
-			}
-			case '3': {
-				board[cellIdx] = 3;
-				break;
-			}
-			case '4': {
-				board[cellIdx] = 4;
-				break;
-			}
-			case '5': {
-				board[cellIdx] = 5;
-				break;
-			}
-			case '6': {
-				board[cellIdx] = 6;
-				break;
-			}
-			case '7': {
-				board[cellIdx] = 7;
-				break;
-			}
-			case '8': {
-				board[cellIdx] = 8;
-				break;
-			}
-			case '9': {
-				board[cellIdx] = 9;
+			case 'Digit1':
+			case 'Digit2':
+			case 'Digit3':
+			case 'Digit4':
+			case 'Digit5':
+			case 'Digit6':
+			case 'Digit7':
+			case 'Digit8':
+			case 'Digit9': {
+				const content = parseInt(event.code.substring(5)) as SudokuCell;
+
+				if (shiftPressed) {
+					//TODO: decide whether to use 0-based or 1-based
+					toggleComment(selectedRow, selectedCol, content);
+				} else {
+					board[cellIdx] = content;
+				}
 				break;
 			}
 		}
-		updateErrorsAfterUpdate();
-	}}
-/>
+		if (!shiftPressed) {
+			updateErrorsAfterUpdate();
+		}
+	}
+</script>
+
+<svelte:window on:keyup|preventDefault={handleKeyUp} />
 
 <!--FIXME: aria-->
 <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -226,6 +242,15 @@
 		{@const isFilled = cell !== 0}
 		{@const isInitial = initial[i] !== 0}
 		{@const cellComments = comments.get(i) || []}
+		{@const currentRowContent = board.filter((_, idx) => Math.floor(idx / 9) + 1 === row)}
+		{@const currentColContent = board.filter((_, idx) => (idx % 9) + 1 === col)}
+		{@const currentBoxContent = board.filter(
+			(_, idx) =>
+				Math.floor((Math.floor(idx / 9) + 1 - 1) / 3) * 3 +
+					Math.floor(((idx % 9) + 1 - 1) / 3) +
+					1 ===
+				box
+		)}
 		<div
 			on:click={() => {
 				selectedRow = row;
@@ -252,14 +277,20 @@
 				{#each cellComments as comment}
 					{@const commentTop = Math.floor((comment - 1) / 3) * 33.33}
 					{@const commentLeft = ((comment - 1) % 3) * 33.33}
-					<div
-						class="absolute h-1/3 w-1/3 text-center text-xs font-normal"
-						class:text-gray-500={selectedCell !== comment}
-						class:text-blue-500={selectedCell === comment}
-						style="top: {commentTop}%; left: {commentLeft}%;"
-					>
-						{comment}
-					</div>
+					{@const isAlreadyInNeighbourhood =
+						currentRowContent.includes(comment) ||
+						currentColContent.includes(comment) ||
+						currentBoxContent.includes(comment)}
+					{#if !isAlreadyInNeighbourhood}
+						<div
+							class="absolute h-1/3 w-1/3 text-center text-xs font-normal"
+							class:text-gray-500={selectedCell !== comment}
+							class:text-blue-500={selectedCell === comment}
+							style="top: {commentTop}%; left: {commentLeft}%;"
+						>
+							{comment}
+						</div>
+					{/if}
 				{/each}
 			{/if}
 		</div>
