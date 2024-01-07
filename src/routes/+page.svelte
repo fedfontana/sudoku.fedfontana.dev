@@ -106,7 +106,6 @@
 	}
 
 	let comments: Map<number, SudokuCell[]> = new Map();
-	comments.set(0, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
 	//TODO: instead of deleting the comment when adding the number to the row/col, just
 	// filter the comments when showing them not to show the number that have already been
