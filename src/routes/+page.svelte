@@ -370,8 +370,8 @@
 			</button>
 		</div>
 
-		<span class="flex items-center gap-1">
-			<input type="checkbox" id="auto-comment" bind:checked={autoFlag} class="mr-2" />
+		<span class="flex items-center gap-2">
+			<input type="checkbox" id="auto-comment" bind:checked={autoFlag} />
 			<label for="auto-comment">auto comment</label>
 		</span>
 		<button
