@@ -122,6 +122,8 @@
 
 	const FULL_COMMENTS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as SudokuCell[];
 
+	let counts = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+
 	function toggleComment(row: number, col: number, comment: SudokuCell) {
 		const cellIdx = (row - 1) * 9 + (col - 1);
 		let c = comments.get(cellIdx) || [];
@@ -213,6 +215,9 @@
 					//TODO: decide whether to use 0-based or 1-based
 					toggleComment(selectedRow, selectedCol, content);
 				} else {
+					if (counts[content - 1] >= 9) {
+						return;
+					}
 					board[cellIdx] = content;
 				}
 				break;
@@ -221,6 +226,18 @@
 		if (!shiftPressed) {
 			updateErrorsAfterUpdate();
 		}
+		updateCounts();
+	}
+
+	//TODO: should be more efficient: only check what changed (maybe split in 2 functions: changeCellContent(cell, num) and clearCell(cell))
+	function updateCounts() {
+		counts = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+		for (const cell of board) {
+			if (cell !== 0) {
+				counts[cell - 1]++;
+			}
+		}
+		counts = counts;
 	}
 
 	let autoFlag = false;
@@ -277,10 +294,11 @@
 					class:border-r-black={col % 3 === 0}
 					class:border-r-2={col !== 9}
 					class:bg-gray-200={!isExactCell && isRelatedToCurrent}
-					class:bg-blue-300={isFilled && !isExactCell && isSameCellContent}
+					class:bg-blue-300={isFilled && !isExactCell && !isErrored && isSameCellContent}
 					class:bg-blue-200={isExactCell && !isErrored}
 					class:bg-red-200={!isExactCell && isErrored}
 					class:bg-red-400={isExactCell && isErrored}
+					class:bg-red-300={!isExactCell && isErrored && isSameCellContent}
 					class:text-black={isInitial}
 					class:text-blue-500={!isInitial && !isErrored}
 					class:text-red-700={!isInitial && isErrored}
@@ -320,7 +338,7 @@
 						class={`w-[${1 / 9}%] h-[${
 							1 / 9
 						}%] rounded-lg bg-blue-400 p-2 text-xl disabled:bg-gray-200 md:p-0`}
-						disabled={selectedCell === num}
+						disabled={selectedCell === num || counts[num - 1] >= 9}
 						on:click={() => {
 							if (selectedRow === null || selectedCol === null) {
 								return;
@@ -328,6 +346,7 @@
 							const cellIdx = (selectedRow - 1) * 9 + (selectedCol - 1);
 							board[cellIdx] = num;
 							updateErrorsAfterUpdate();
+							updateCounts();
 						}}
 					>
 						{num}
@@ -344,6 +363,7 @@
 					const cellIdx = (selectedRow - 1) * 9 + (selectedCol - 1);
 					board[cellIdx] = 0;
 					updateErrorsAfterUpdate();
+					updateCounts();
 				}}
 			>
 				del
@@ -358,7 +378,7 @@
 			on:click={() => {
 				navigator.clipboard.writeText(pageBaseURL + '?board=' + encodeBoard(board));
 			}}
-			class="text-normal rounded-xl bg-blue-500 px-4 py-2 font-semibold text-white transition-all duration-300 hover:bg-blue-700"
+			class="rounded-xl bg-blue-500 px-4 py-2 text-xl font-semibold text-white transition-all duration-300 hover:bg-blue-700"
 		>
 			Copy puzzle link
 		</button>
