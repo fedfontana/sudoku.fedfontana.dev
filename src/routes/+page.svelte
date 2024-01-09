@@ -126,7 +126,6 @@
 			c.push(comment);
 		}
 		comments.set(cellIdx, c);
-		console.log(comments);
 		comments = comments;
 	}
 
@@ -313,7 +312,8 @@
 								currentBoxContent.includes(comment)}
 							{#if !isAlreadyInNeighbourhood}
 								<div
-									class="absolute flex h-1/3 w-1/3 items-center justify-center text-[90%] font-normal"
+									class="absolute flex h-1/3 w-1/3 items-center justify-center
+                                    text-xs font-normal md:text-base lg:text-lg xl:text-xl"
 									class:text-gray-500={selectedCell !== comment}
 									class:text-blue-500={selectedCell === comment}
 									style="top: {commentTop}%; left: {commentLeft}%;"
