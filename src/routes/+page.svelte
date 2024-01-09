@@ -285,7 +285,8 @@
 					class={`relative flex h-[${1 / 9}%] w-[${
 						1 / 9
 					}%] cursor-pointer items-center justify-center
-            border-gray-400 text-[200%] font-semibold selection:bg-none`}
+                        border-gray-400 text-xl font-semibold 
+                        selection:bg-none md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl`}
 					class:border-b-black={row % 3 === 0}
 					class:border-b-2={row !== 9}
 					class:border-r-black={col % 3 === 0}
