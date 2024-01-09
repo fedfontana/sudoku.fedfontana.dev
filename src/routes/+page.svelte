@@ -313,7 +313,7 @@
 							{#if !isAlreadyInNeighbourhood}
 								<div
 									class="absolute flex h-1/3 w-1/3 items-center justify-center
-                                    text-xs font-normal md:text-base lg:text-lg xl:text-xl"
+                                    text-xs font-normal md:text-base lg:text-lg xl:text-xl 2xl:text-2xl"
 									class:text-gray-500={selectedCell !== comment}
 									class:text-blue-500={selectedCell === comment}
 									style="top: {commentTop}%; left: {commentLeft}%;"
