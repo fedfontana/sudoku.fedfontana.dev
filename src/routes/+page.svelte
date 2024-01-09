@@ -113,13 +113,6 @@
 
 	let comments: Map<number, SudokuCell[]> = new Map();
 
-	//TODO: instead of deleting the comment when adding the number to the row/col, just
-	// filter the comments when showing them not to show the number that have already been
-	// added to the row/col/block. In this way, if the user decides to remove the number,
-	// the comment will reappear.
-
-	//TODO: Ctrl-Z support?
-
 	const FULL_COMMENTS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as SudokuCell[];
 
 	let counts = [0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -179,6 +172,11 @@
 				if (selectedCol < 9) {
 					selectedCol++;
 				}
+				return;
+			}
+			case 'Escape': {
+				selectedRow = null;
+				selectedCol = null;
 				return;
 			}
 		}
