@@ -9,10 +9,11 @@
 
 	const encoded = $page.url.searchParams.get('board');
 
-	const initial =
+	const initial = (
 		encoded !== null && encoded.length === 81
 			? decodeBoard(encoded)
-			: Array.from({ length: 81 }).fill(0);
+			: Array.from({ length: 81 }).fill(0)
+	) as SudokuBoard;
 
 	const board: SudokuBoard = JSON.parse(JSON.stringify(initial));
 	console.assert(board.length === 81);
@@ -375,7 +376,7 @@
 		</span>
 		<button
 			on:click={() => {
-				navigator.clipboard.writeText(pageBaseURL + '?board=' + encodeBoard(board));
+				navigator.clipboard.writeText(pageBaseURL + '?board=' + encodeBoard(initial));
 			}}
 			class="rounded-xl bg-blue-500 px-4 py-2 text-xl font-semibold text-white transition-all duration-300 hover:bg-blue-700"
 		>
